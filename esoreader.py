@@ -140,15 +140,17 @@ class EsoFile(object):
         """
         from pandas import DataFrame
         variables = self.find_variable(search, key=key, frequency=frequency)
+
         data = {}
-        data['datetime'] = self.data['dtime']
+        data['datetime'] = self.data[self.dd.index[variables[0]]]['dtime']
         if use_key_for_columns:
             for v in variables:
-                data[v[1]] = self.data[self.dd.index[v]]
+                data[v[1]] = self.data[self.dd.index[v]]['data'] 
         else:# use variable name as column name
             for v in variables:
-                data[v[2]] = self.data[self.dd.index[v]]
-        data['dayType'] = self.data['dayType']
+                data[v[2]] = self.data[self.dd.index[v]]['data']
+        data['dayType'] = self.data[self.dd.index[variables[0]]]['dayType']            
+
         df = DataFrame(data)
             
         if index is not None:
@@ -181,9 +183,9 @@ class EsoFile(object):
         """
         version, timestamp = [s.strip() for s
                               in self.eso_file.readline().split(',')[-2:]]
-
         dd = DataDictionary(version, timestamp)
         line = self.eso_file.readline().strip()
+
         while line != 'End of Data Dictionary':
             line, reporting_frequency = self._read_reporting_frequency(line)
             if reporting_frequency:
@@ -210,13 +212,13 @@ class EsoFile(object):
         read_data_dictionary(eso_file) to obtain dd.'''
 
         '''
-            Modified by Fan. Data[id]
+            Modified by Fan. 
         '''
         data = {}  # id => [value]
         for id in self.dd.variables.keys():
-            data[id] = []
-        data['dtime'] = []
-        data['dayType'] = []
+            data[id] = {'dtime':[],
+                        'data':[],
+                        'dayType':[]}
         
         for line in self.eso_file:
             if line.startswith('End of Data'):
@@ -225,12 +227,13 @@ class EsoFile(object):
             id = int(fields[0])
             if id == 2: # this is the timestamp for all following outputs
                 dtime = datetime.datetime(self.dd.year,int(fields[2]),int(fields[3]),int(float(fields[5]))-1,int(float(fields[6])))
-                data['dtime'].append(dtime)
-                data['dayType'].append(fields[-1])
+                dayType = fields[-1]
                 continue
 
             if id not in self.dd.ids:
                 # skip entries that are not output:variables
                 continue
-            data[id].append(float(fields[1]))
+            data[id]['dtime'].append(dtime)
+            data[id]['data'].append(float(fields[1]))
+            data[id]['dayType'].append(dayType)
         return data
