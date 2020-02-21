@@ -26,7 +26,8 @@ The `esoreader` module makes it very easy to explore the output of EnergyPlus, s
 The easiest way to install `esoreader` ist to do:
 
 ```
-$ pip install esoreader
+Download this repository, and navigate to the folder containing file "setup.py"
+Run python setup.py install in Command line
 ```
 
 # Using esoreader with Pandas
