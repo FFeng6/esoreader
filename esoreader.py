@@ -1,10 +1,14 @@
 # This file is licensed under the terms of the MIT license. See the file
 # "LICENSE" in the project root for more information.
 #
-# This module was developed by Daren Thomas at the assistant chair for
+# This module was "original" developed by Daren Thomas at the assistant chair for
 # Sustainable Architecture and Building Technologies (Suat) at the Institute of
 # Technology in Architecture, ETH Zuerich. See http://suat.arch.ethz.ch for
 # more information.
+
+##### modification#####
+# This module was then modified by Fan Feng, who is Ph.D. student at Texas A&M. 
+
 
 '''
 esoreader.py
@@ -82,6 +86,7 @@ class DataDictionary(object):
         '''
         self.version = version
         self.timestamp = timestamp
+        self.year = 2019 # 2022 is just a default value
         self.variables = {}
         self.index = {}
 
@@ -108,34 +113,44 @@ class EsoFile(object):
         self.dd = self._read_data_dictionary()
         self.dd.build_index()
         self.data = self._read_data()
+        
 
     def find_variable(self, search, key=None, frequency='TimeStep'):
         """returns the coordinates (timestep, key, variable_name) in the
         data dictionary that can be used to find an index. The search is case
         insensitive and need only be specified partially."""
         variables = self.dd.find_variable(search)
-        variables = [v for v in variables
+        if frequency:
+            variables = [v for v in variables
                      if v[0].lower() == frequency.lower()]
         if key:
             variables = [v for v in variables
                          if v[1].lower() == key.lower()]
         return variables
 
-    def to_frame(self, search, key=None, frequency='TimeStep', index=None, use_key_for_columns=True):
+    def to_frame(self, search, key=None, frequency= None, index=None, use_key_for_columns=False):
         """
         creates a pandas DataFrame objects with a column for every variable
         that matches the search pattern and key. An None key matches all keys.
         NOTE: The frequency *has* to be the same for all variables selected.
         (uses find_variable to select the variables)
+
+        :key: default value is "None"
+        : frequency: default value is "*", which means all matched variables will be returned
         """
         from pandas import DataFrame
         variables = self.find_variable(search, key=key, frequency=frequency)
+        data = {}
+        data['datetime'] = self.data['dtime']
         if use_key_for_columns:
-            data = {v[1]: self.data[self.dd.index[v]] for v in variables}
-        else:
-            # use variable name as column name
-            data = {v[2]: self.data[self.dd.index[v]] for v in variables}
+            for v in variables:
+                data[v[1]] = self.data[self.dd.index[v]]
+        else:# use variable name as column name
+            for v in variables:
+                data[v[2]] = self.data[self.dd.index[v]]
+        data['dayType'] = self.data['dayType']
         df = DataFrame(data)
+            
         if index is not None:
             df.index = index
         return df
@@ -143,9 +158,9 @@ class EsoFile(object):
     def _read_reporting_frequency(self, line):
         reporting_frequency = None
         if '! ' in line:
-            line = line.split('! ')[0]
+            line = line.split('! ')[0]   #'! ',
         if ' !' in line:
-            line, reporting_frequency = line.split(' !')
+            line, reporting_frequency = line.split(' !') #' !'
             # RunPeriod contains more stuff (" [Value,Min,Month,Day,Hour,
             # Minute, Max,Month,Day,Hour,Minute]")split it off
             reporting_frequency = reporting_frequency.split()[0]
@@ -166,6 +181,7 @@ class EsoFile(object):
         """
         version, timestamp = [s.strip() for s
                               in self.eso_file.readline().split(',')[-2:]]
+
         dd = DataDictionary(version, timestamp)
         line = self.eso_file.readline().strip()
         while line != 'End of Data Dictionary':
@@ -188,17 +204,31 @@ class EsoFile(object):
         return dd
 
     def _read_data(self):
+        import datetime
         '''parse the data from the .eso file returning,
         NOTE: eso_file should be the same file object that was passed to
         read_data_dictionary(eso_file) to obtain dd.'''
+
+        '''
+            Modified by Fan. Data[id]
+        '''
         data = {}  # id => [value]
         for id in self.dd.variables.keys():
             data[id] = []
+        data['dtime'] = []
+        data['dayType'] = []
+        
         for line in self.eso_file:
             if line.startswith('End of Data'):
                 break
             fields = [f.strip() for f in line.split(',')]
             id = int(fields[0])
+            if id == 2: # this is the timestamp for all following outputs
+                dtime = datetime.datetime(self.dd.year,int(fields[2]),int(fields[3]),int(float(fields[5]))-1,int(float(fields[6])))
+                data['dtime'].append(dtime)
+                data['dayType'].append(fields[-1])
+                continue
+
             if id not in self.dd.ids:
                 # skip entries that are not output:variables
                 continue
