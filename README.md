@@ -35,41 +35,17 @@ Run python setup.py install in Command line
 ```python
 In [1]: import esoreader
 
-In [2]: eso = esoreader.read_from_path(r"C:\...\experiment01.eso")
+In [2]: path  = r"C:\Users\Sample\1ZoneUncontrolledWithHysteresisPCM.eso"
 
-In [3]: eso.find_variable('heating')
-Out[3]:
-[('TimeStep', None, 'Heating:EnergyTransfer'),
- ('TimeStep',
-  'DEFAULT_ZONEZONEHVAC:IDEALLOADSAIRSYSTEM',
-  'Zone Ideal Loads Zone Total Heating Energy')]
+In [3]: eso = esoreader.read_from_path(path)
 
-In [4]: df = eso.to_frame('heating energy')
+In [4]: df = eso.to_frame("CondFD Phase Change Node Temperature")
 
-In [5]: df[:10]
-Out[5]:
-   DEFAULT_ZONEZONEHVAC:IDEALLOADSAIRSYSTEM
-0                            8596050.719384
-1                            8672511.667988
-2                            8737544.119096
-3                            8799182.506582
-4                            8862116.803218
-5                            8928593.537248
-6                            5296266.226576
-7                                  0.000000
-8                                  0.000002
-9                                  0.000000
-
-In [6]: df.plot()
-Out[6]: <matplotlib.axes._subplots.AxesSubplot at 0x7854090>
-
-In [7]: %matplotlib tk
-
-In [8]: df.plot()
-Out[8]: <matplotlib.axes._subplots.AxesSubplot at 0x7b66670>
+In [5]: df
+![Zone Ideal Loads Zone Total Heating Energy](https://raw.githubusercontent.com/architecture-building-systems/esoreader/master/doc/Notebook_slice.png)
 ```
 
-![Zone Ideal Loads Zone Total Heating Energy](https://raw.githubusercontent.com/architecture-building-systems/esoreader/master/doc/ZoneIdealLoadsZoneTotalHeatingEnergy.png)
+
 
 Notice in the above example how the variable is matched by substring - you
 don't have to specify the whole variable name. Each matching variable will show
