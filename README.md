@@ -20,7 +20,9 @@ The `esoreader` module makes it very easy to explore the output of EnergyPlus, s
 # Features
 
 - parse *.eso files to pandas `DataFrame`s
+  - Timestampe will be returned automatically.
 - search for output variables by substring
+
 
 # Installation
 
